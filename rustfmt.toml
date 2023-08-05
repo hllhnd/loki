@@ -1,0 +1,30 @@
+edition                         = "2021"
+version                         = "One"
+unstable_features               = true
+error_on_unformatted            = true
+
+group_imports                   = "StdExternalCrate"
+hex_literal_case                = "Upper"
+imports_granularity             = "Item"
+newline_style                   = "Unix"
+
+comment_width                   = 120
+max_width                       = 120
+enum_discrim_align_threshold    = 20
+struct_field_align_threshold    = 20
+
+condense_wildcard_suffixes      = true
+format_generated_files          = false
+format_macro_bodies             = true
+format_macro_matchers           = true
+format_strings                  = true
+match_arm_blocks                = false
+match_block_trailing_comma      = true
+normalize_comments              = true
+normalize_doc_attributes        = true
+overflow_delimited_expr         = true
+reorder_impl_items              = true
+struct_lit_single_line          = false
+use_field_init_shorthand        = true
+use_try_shorthand               = true
+wrap_comments                   = true

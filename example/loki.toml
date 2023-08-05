@@ -1,0 +1,8 @@
+[package]
+name = "my_project"
+type = "binary"
+
+[configuration]
+c-standard = "c17"
+opt-level = 3
+lto = "full"
