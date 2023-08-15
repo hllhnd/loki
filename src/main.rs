@@ -1,8 +1,10 @@
+#![feature(stmt_expr_attributes)]
+
+mod meta;
 mod task;
 
 use std::env::current_dir;
 use std::io::Error;
-use std::path::Path;
 use std::path::PathBuf;
 
 use color_eyre::Result;
@@ -11,6 +13,8 @@ use task::compile::compile_source_to_object;
 use task::link::link_objects_to_executable;
 use task::object::resolve_object;
 use tokio::fs::create_dir_all;
+
+use crate::meta::language::Standard;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,7 +34,13 @@ async fn main() -> Result<()> {
             .map(|source| async {
                 let object = resolve_object(&source, &target_dir).await?;
 
-                assert_eq!(compile_source_to_object(source, &object).await?.code().unwrap(), 0);
+                assert_eq!(
+                    compile_source_to_object(Standard::C99, source, &object)
+                        .await?
+                        .code()
+                        .unwrap(),
+                    0
+                );
 
                 Ok::<PathBuf, Error>(object)
             }),
