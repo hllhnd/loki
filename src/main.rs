@@ -2,6 +2,7 @@ mod task;
 
 use std::env::current_dir;
 use std::io::Error;
+use std::path::Path;
 use std::path::PathBuf;
 
 use color_eyre::Result;
@@ -27,12 +28,9 @@ async fn main() -> Result<()> {
             .filter(|pb| pb.is_file())
             .filter(|pb| pb.extension().is_some_and(|ex| ex == "c"))
             .map(|source| async {
-                let object = resolve_object(source.clone(), target_dir.clone()).await?;
+                let object = resolve_object(&source, &target_dir).await?;
 
-                assert_eq!(
-                    compile_source_to_object(source, object.clone()).await?.code().unwrap(),
-                    0
-                );
+                assert_eq!(compile_source_to_object(source, &object).await?.code().unwrap(), 0);
 
                 Ok::<PathBuf, Error>(object)
             }),
