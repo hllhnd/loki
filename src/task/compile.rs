@@ -8,11 +8,12 @@ use crate::meta::language::Standard;
 
 /// Invoke a Clang compilation from a source and object path
 pub async fn compile_source_to_object(
+    compiler: impl AsRef<Path>,
     standard: Standard,
     source: impl AsRef<Path>,
     object: impl AsRef<Path>,
 ) -> Result<ExitStatus, Error> {
-    let mut compiler_command = Command::new("clang");
+    let mut compiler_command = Command::new(compiler.as_ref());
     compiler_command.arg(standard.to_arg());
     compiler_command.arg("-c");
     compiler_command.arg("-o");

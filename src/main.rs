@@ -3,6 +3,7 @@
 mod meta;
 mod task;
 
+use std::env;
 use std::env::current_dir;
 use std::io::Error;
 use std::path::PathBuf;
@@ -20,6 +21,8 @@ use crate::meta::language::Standard;
 async fn main() -> Result<()> {
     color_eyre::install()?;
 
+    let cc = PathBuf::from(env::var("CC").unwrap_or_else(|_| "clang".to_owned()));
+
     let target_dir = current_dir()?.join("target");
     create_dir_all(&target_dir).await?;
 
@@ -35,7 +38,7 @@ async fn main() -> Result<()> {
                 let object = resolve_object(&source, &target_dir).await?;
 
                 assert_eq!(
-                    compile_source_to_object(Standard::C99, source, &object)
+                    compile_source_to_object(&cc, Standard::C99, source, &object)
                         .await?
                         .code()
                         .unwrap(),
@@ -48,6 +51,7 @@ async fn main() -> Result<()> {
     .await;
 
     link_objects_to_executable(
+        cc,
         objects
             .iter()
             .map(|o| o.as_ref().cloned().unwrap())
