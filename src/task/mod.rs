@@ -1,3 +1,3 @@
-mod compile;
-mod link;
-mod object;
+pub mod compile;
+pub mod link;
+pub mod object;

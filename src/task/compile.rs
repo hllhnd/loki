@@ -7,6 +7,7 @@ use tokio::process::Command;
 /// Invoke a Clang compilation from a source and object path
 pub async fn compile_source_to_object(source: PathBuf, object: PathBuf) -> Result<ExitStatus, Error> {
     let mut compiler_command = Command::new("clang");
+    compiler_command.arg("-c");
     compiler_command.arg("-o");
     compiler_command.arg(object);
     compiler_command.arg(source);
