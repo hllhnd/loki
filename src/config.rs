@@ -7,14 +7,14 @@ use serde::Serialize;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Project {
-    pub package:       Package,
+    pub package: Package,
     pub configuration: Configuration,
 }
 
 impl Default for Project {
     fn default() -> Self {
         Self {
-            package:       Package {
+            package: Package {
                 name: "my_project".to_owned(),
                 kind: ProjectKind::Binary,
             },
@@ -40,7 +40,7 @@ pub enum ProjectKind {
 #[serde(rename = "config")]
 pub struct Configuration {
     #[serde(rename = "c-standard")]
-    pub standard:     Standard,
+    pub standard: Standard,
     #[serde(flatten)]
     pub optimization: Optimization,
 }
@@ -65,7 +65,7 @@ pub enum Standard {
 pub struct Optimization {
     #[serde(rename = "opt-level")]
     pub level: OptimizationLevel,
-    pub lto:   Option<Lto>,
+    pub lto: Option<Lto>,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -151,4 +151,16 @@ impl<'de> Deserialize<'de> for OptimizationLevel {
 pub enum Lto {
     Full,
     Thin,
+}
+
+impl Project {
+    pub fn with_name<T>(name: T) -> Self
+    where
+        T: ToString,
+    {
+        let name = name.to_string();
+        let mut project = Project::default();
+        project.package.name = name;
+        project
+    }
 }

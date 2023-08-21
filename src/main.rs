@@ -3,6 +3,7 @@ mod config;
 mod directory;
 mod executable;
 mod node;
+mod project_tools;
 
 use std::cell::RefCell;
 use std::env::args;
@@ -20,6 +21,7 @@ use compiler::LinkObjectsToBinary;
 use directory::CreateDirectory;
 use itertools::Itertools;
 use node::Node;
+use project_tools::create_project;
 use walkdir::WalkDir;
 
 use crate::config::Project;
@@ -63,6 +65,22 @@ fn main() -> Result<(), Report> {
             );
         },
 
+        Some("new") => {
+            if let Some(name) = args.get(2) {
+                create_project(current_dir()?, name)?
+            } else {
+                #[rustfmt::skip]
+                println!(
+                    "error: the following requred arguments where not provided:\n\
+                    <path>\n\
+                    \n\
+                    Usage: loki new <path>\n\
+                    \n\
+                    for more information, try `--help`"   
+                );
+            }
+        },
+
         _ => {
             println!("Unknown command/flag '{}'. See '--help' for usage.", args[1]);
         },
@@ -102,14 +120,14 @@ fn build_project() -> Result<(), Report> {
         executable: Box::new(CreateDirectory {
             directory: target_directory.clone(),
         }),
-        children:   Vec::new(),
+        children: Vec::new(),
     }));
 
     let create_object_directory_node = Rc::new(RefCell::new(Node {
         executable: Box::new(CreateDirectory {
             directory: object_directory.clone(),
         }),
-        children:   Vec::new(),
+        children: Vec::new(),
     }));
 
     let c2so_nodes = source_files
@@ -117,14 +135,14 @@ fn build_project() -> Result<(), Report> {
         .into_iter()
         .map(|source| {
             let cs2o = CSourceToObject {
-                configuration:    project.configuration,
-                input:            source,
+                configuration: project.configuration,
+                input: source,
                 object_directory: object_directory.clone(),
             };
 
             let node = Node {
                 executable: Box::new(cs2o),
-                children:   vec![
+                children: vec![
                     Rc::clone(&create_target_directory_node),
                     Rc::clone(&create_object_directory_node),
                 ],
@@ -137,13 +155,16 @@ fn build_project() -> Result<(), Report> {
     let lo2b_node = Rc::new(RefCell::new(Node {
         executable: Box::new(LinkObjectsToBinary {
             optimization: project.configuration.optimization,
-            inputs:       source_files,
-            output:       target_directory.join(project.package.name),
+            inputs: source_files,
+            output: target_directory.join(project.package.name),
         }),
-        children:   [&c2so_nodes[..], &[
-            Rc::clone(&create_target_directory_node),
-            Rc::clone(&create_target_directory_node),
-        ]]
+        children: [
+            &c2so_nodes[..],
+            &[
+                Rc::clone(&create_target_directory_node),
+                Rc::clone(&create_target_directory_node),
+            ],
+        ]
         .concat(),
     }));
 
