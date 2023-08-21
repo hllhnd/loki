@@ -1,7 +1,10 @@
+use std::env::current_dir;
+
 use color_eyre::Report;
+use indoc::indoc;
+
 use crate::build_project;
 use crate::config::Project;
-use std::env::current_dir;
 
 pub fn process(args: &[String]) -> Result<(), Report> {
     match args.get(1).map(|f| f.as_str()) {
@@ -10,34 +13,32 @@ pub fn process(args: &[String]) -> Result<(), Report> {
         },
 
         Some("-v" | "--version") => {
-            #[rustfmt::skip]
-            println!(
-                "The Loki Build System, version 0.1.0\n\
-                \n\
-                Copyright (c) 2023 Reperak\n\
-                \n\
-                Loki is free software licensed under the GNU GPL version 3 or later.\n\
-                \n\
-                If you did not receive a copy of the license with this program, you may obtain\n\
-                one at <http://gnu.org/licenses/gpl.html>."
-            );
+            print!(indoc! {"
+                The Loki Build System, version 0.1.0
+
+                Copyright (c) 2023 Reperak
+
+                Loki is free software licensed under the GNU GPL version 3 or later.
+
+                If you did not receive a copy of the license with this program, you may obtain
+                one at <http://gnu.org/licenses/gpl.html>.
+            "});
         },
 
         Some("-h" | "--help") | None => {
-            #[rustfmt::skip]
-            println!(
-                "The Loki Build System\n\
-                \n\
-                Copyright (c) 2023 Reperak\n\
-                \n\
-                Subcommands:\n    \
-                    build           Build a Loki project\n    \
-                    new             Create a new Loki project\n\
-                \n\
-                Usage:\n    \
-                    --help          Show this text and exit\n    \
-                    --version       Show version information"
-            );
+            print!(indoc! {"
+                The Loki Build System
+
+                Copyright (c) 2023 Reperak
+
+                Subcommands:
+                    build           Build a Loki project
+                    new             Create a new Loki project
+
+                Usage:
+                    --help          Show this text and exit
+                    --version       Show version information
+            "});
         },
 
         Some("new") =>
@@ -45,12 +46,11 @@ pub fn process(args: &[String]) -> Result<(), Report> {
                 // TODO: allow for creating projects in other directories
                 Project::with_name(name).generate_at(current_dir()?)?;
             } else {
-                #[rustfmt::skip]
-                println!(
-                    "error: missing argument 'path'\n\
-                    \n\
-                    Usage: loki new <path>"
-                );
+                print!(indoc! {"
+                    error: missing argument 'path'
+
+                    Usage: loki new <path>
+                "});
             },
 
         _ => {
