@@ -3,6 +3,7 @@ name = "my_project"
 type = "binary"
 
 [configuration]
+compiler = "clang"
 c-standard = "c17"
 opt-level = 3
 lto = "full"

@@ -81,7 +81,7 @@ fn build_project() -> Result<(), Report> {
         .into_iter()
         .map(|source| {
             let cs2o = CSourceToObject {
-                configuration:    project.configuration,
+                configuration:    project.configuration.clone(),
                 input:            source,
                 object_directory: object_directory.clone(),
             };

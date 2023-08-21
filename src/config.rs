@@ -3,6 +3,7 @@ use std::fmt::Formatter;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
+use std::path::PathBuf;
 
 use color_eyre::Report;
 use serde::de::Visitor;
@@ -75,13 +76,24 @@ pub enum ProjectKind {
     Binary,
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename = "config")]
 pub struct Configuration {
+    pub compiler:     PathBuf,
     #[serde(rename = "c-standard")]
     pub standard:     Standard,
     #[serde(flatten)]
     pub optimization: Optimization,
+}
+
+impl Default for Configuration {
+    fn default() -> Self {
+        Self {
+            compiler:     PathBuf::from("clang"),
+            standard:     Default::default(),
+            optimization: Default::default(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]

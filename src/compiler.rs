@@ -31,7 +31,7 @@ impl Executable for CSourceToObject {
         let hash = format!("{:x}", xxh3_64(&buf));
         let output = self.object_directory.join(format!("{}.o", hash));
 
-        let mut command = Command::new("clang");
+        let mut command = Command::new(&self.configuration.compiler);
 
         command.arg(match self.configuration.standard {
             Standard::C89 => "-std=c89",
