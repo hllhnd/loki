@@ -14,7 +14,7 @@ pub fn process(args: &[String]) -> Result<(), Report> {
 
         Some("-v" | "--version") => {
             print!(indoc! {"
-                The Loki Build System, version 0.1.0
+                The Loki Build System, version 0.0.1
 
                 Copyright (c) 2023 Reperak
 
