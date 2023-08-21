@@ -11,7 +11,7 @@ use serde::Serialize;
 
 const INIT_CODE: &str = r#"#include <stdio.h>
 
-int main() {
+int main(void) {
     printf("Hello, world!\n");
     return 0;
 }
