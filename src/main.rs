@@ -55,7 +55,8 @@ fn main() -> Result<(), Report> {
                 Copyright (c) 2023 Reperak\n\
                 \n\
                 Subcommands:\n    \
-                    build           Build a Loki project\n\
+                    build           Build a Loki project\n    \
+                    new             Create a new Loki project\n\
                 \n\
                 Usage:\n    \
                     --help          Show this text and exit\n    \
@@ -70,12 +71,9 @@ fn main() -> Result<(), Report> {
             } else {
                 #[rustfmt::skip]
                 println!(
-                    "error: the following requred arguments where not provided:\n\
-                    <path>\n\
+                    "error: missing argument 'path'\n\
                     \n\
-                    Usage: loki new <path>\n\
-                    \n\
-                    for more information, try `--help`"
+                    Usage: loki new <path>"
                 );
             },
 
