@@ -1,38 +1,77 @@
 use std::fmt;
 use std::fmt::Formatter;
+use std::fs;
+use std::io::ErrorKind;
+use std::path::Path;
 
+use color_eyre::Report;
 use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Serialize;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+const INIT_CODE: &str = r#"#include <stdio.h>
+
+int main() {
+    printf("Hello, world!\n");
+    return 0;
+}
+"#;
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Project {
     pub package:       Package,
     pub configuration: Configuration,
 }
 
-impl Default for Project {
-    fn default() -> Self {
+impl Project {
+    pub fn with_name(name: impl Into<String>) -> Self {
         Self {
             package:       Package {
-                name: "my_project".to_owned(),
-                kind: ProjectKind::Binary,
+                name: name.into(),
+                ..Default::default()
             },
             configuration: Default::default(),
         }
     }
+
+    /// Generate a new project based on `self` at the given path.
+    ///
+    /// # Errors
+    /// This method will error if the project directory exists but is non-empty, or if a miscellaneous I/O error occurs.
+    pub fn generate_at(self, root_path: impl AsRef<Path>) -> Result<(), Report> {
+        let loki_toml_path = root_path.as_ref().join("loki.toml");
+        let source_path = root_path.as_ref().join("src");
+        let main_path = source_path.join("main.c");
+        match fs::create_dir(root_path.as_ref()) {
+            Ok(()) => (),
+            Err(e) if e.kind() == ErrorKind::AlreadyExists => {
+                if fs::read_dir(root_path)?.next().is_some() {
+                    // TODO: this should be a custom error type but a panic is good enough for now
+                    panic!("Directory is not empty");
+                }
+            },
+            Err(e) => return Err(e.into()),
+        }
+
+        fs::write(loki_toml_path, toml::to_string(&self)?)?;
+        fs::create_dir(source_path)?;
+        fs::write(main_path, INIT_CODE)?;
+
+        Ok(())
+    }
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Package {
     pub name: String,
     #[serde(rename = "type")]
     pub kind: ProjectKind,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum ProjectKind {
+    #[default]
     Binary,
 }
 
@@ -151,16 +190,4 @@ impl<'de> Deserialize<'de> for OptimizationLevel {
 pub enum Lto {
     Full,
     Thin,
-}
-
-impl Project {
-    pub fn with_name<T>(name: T) -> Self
-    where
-        T: ToString,
-    {
-        let name = name.to_string();
-        let mut project = Project::default();
-        project.package.name = name;
-        project
-    }
 }

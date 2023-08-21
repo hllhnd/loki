@@ -3,7 +3,6 @@ mod config;
 mod directory;
 mod executable;
 mod node;
-mod project_tools;
 
 use std::cell::RefCell;
 use std::env::args;
@@ -21,7 +20,6 @@ use compiler::LinkObjectsToBinary;
 use directory::CreateDirectory;
 use itertools::Itertools;
 use node::Node;
-use project_tools::create_project;
 use walkdir::WalkDir;
 
 use crate::config::Project;
@@ -67,7 +65,8 @@ fn main() -> Result<(), Report> {
 
         Some("new") =>
             if let Some(name) = args.get(2) {
-                create_project(current_dir()?, name)?
+                // TODO: allow for creating projects in other directories
+                Project::with_name(name).generate_at(current_dir()?)?;
             } else {
                 #[rustfmt::skip]
                 println!(
