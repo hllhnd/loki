@@ -47,9 +47,9 @@ pub fn process(args: &[String]) -> Result<(), Report> {
                 Project::with_name(name).generate_at(current_dir()?)?;
             } else {
                 print!(indoc! {"
-                    error: missing argument 'path'
+                    error: missing argument 'name'
 
-                    Usage: loki new <path>
+                    Usage: loki new <name>
                 "});
             },
 
