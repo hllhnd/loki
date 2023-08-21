@@ -37,7 +37,7 @@ fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
 
 fn subcommand_version() -> Result<(), Report> {
     print!(indoc! {"
-        The Loki Build System, version 0.0.1
+        The Loki Build System, version 0.0.2
 
         Copyright (c) 2023 Reperak
 
