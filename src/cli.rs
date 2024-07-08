@@ -8,35 +8,35 @@ use crate::config::Project;
 
 /// Process the command line arguments and run the appropriate subcommand, assuming command arguments start at index 1.
 pub fn process(args: &[String]) -> Result<(), Report> {
-    match args.get(1).map(|f| f.as_str()) {
-        Some("build") => subcommand_build(),
-        Some("new") => subcommand_new(args.get(2)),
-        Some("-v" | "--version") => subcommand_version(),
-        Some("-h" | "--help") | None => subcommand_help(),
-        _ => Ok(println!("Unknown command/flag '{}'. See '--help' for usage.", args[1])),
-    }
+	match args.get(1).map(|f| f.as_str()) {
+		Some("build") => subcommand_build(),
+		Some("new") => subcommand_new(args.get(2)),
+		Some("-v" | "--version") => subcommand_version(),
+		Some("-h" | "--help") | None => subcommand_help(),
+		_ => Ok(println!("Unknown command/flag '{}'. See '--help' for usage.", args[1])),
+	}
 }
 
 fn subcommand_build() -> Result<(), Report> {
-    build_project()
+	build_project()
 }
 
 fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
-    match name {
-        Some(name) => Project::with_name(name).generate_at(current_dir()?),
-        None => {
-            print!(indoc! {"
+	match name {
+		Some(name) => Project::with_name(name).generate_at(current_dir()?),
+		None => {
+			print!(indoc! {"
                 error: missing argument 'name'
 
                 Usage: loki new <name>
             "});
-            Ok(())
-        },
-    }
+			Ok(())
+		},
+	}
 }
 
 fn subcommand_version() -> Result<(), Report> {
-    print!(indoc! {"
+	print!(indoc! {"
         The Loki Build System, version 0.0.2
 
         Copyright (c) 2023 Reperak
@@ -47,11 +47,11 @@ fn subcommand_version() -> Result<(), Report> {
         one at <http://gnu.org/licenses/gpl.html>.
     "});
 
-    Ok(())
+	Ok(())
 }
 
 fn subcommand_help() -> Result<(), Report> {
-    print!(indoc! {"
+	print!(indoc! {"
         The Loki Build System
 
         Copyright (c) 2023 Reperak
@@ -65,5 +65,5 @@ fn subcommand_help() -> Result<(), Report> {
             --version       Show version information
     "});
 
-    Ok(())
+	Ok(())
 }
