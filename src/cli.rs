@@ -26,10 +26,10 @@ fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
 		Some(name) => Project::with_name(name).generate_at(current_dir()?),
 		None => {
 			print!(indoc! {"
-                error: missing argument 'name'
+				error: missing argument 'name'
 
-                Usage: loki new <name>
-            "});
+				Usage: loki new <name>
+			"});
 			Ok(())
 		},
 	}
@@ -37,33 +37,33 @@ fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
 
 fn subcommand_version() -> Result<(), Report> {
 	print!(indoc! {"
-        The Loki Build System, version 0.0.2
+		The Loki Build System, version 0.0.3
 
-        Copyright (c) 2023 Reperak
+		Copyright (c) 2024 Reperak
 
-        Loki is free software licensed under the GNU GPL version 3 or later.
+		Loki is free software licensed under the GNU GPL version 3 or later.
 
-        If you did not receive a copy of the license with this program, you may obtain
-        one at <http://gnu.org/licenses/gpl.html>.
-    "});
+		If you did not receive a copy of the license with this program, you may obtain
+		one at <http://gnu.org/licenses/gpl.html>.
+	"});
 
 	Ok(())
 }
 
 fn subcommand_help() -> Result<(), Report> {
 	print!(indoc! {"
-        The Loki Build System
+		The Loki Build System, version 0.0.3
 
-        Copyright (c) 2023 Reperak
+		Copyright (c) 2024 Reperak
 
-        Subcommands:
-            build           Build a Loki project
-            new             Create a new Loki project
+		Subcommands:
+		        build           Build a Loki project
+		        new             Create a new Loki project
 
-        Usage:
-            --help          Show this text and exit
-            --version       Show version information
-    "});
+		Usage:
+		        --help          Show this text and exit
+		        --version       Show version information
+	"});
 
 	Ok(())
 }
