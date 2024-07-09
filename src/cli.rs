@@ -1,4 +1,5 @@
 use std::env::current_dir;
+use std::path::PathBuf;
 
 use color_eyre::Report;
 use indoc::indoc;
@@ -33,7 +34,23 @@ fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
 				standard: Standard::C99,
 			};
 
-			let project_directory = current_dir()?;
+			let project_directory = PathBuf::from(name);
+			std::fs::create_dir(&project_directory)?;
+			let src_directory = project_directory.join("src");
+			std::fs::create_dir(&src_directory)?;
+			let src_file = src_directory.join(format!("{}.c", name));
+			std::fs::write(
+				src_file,
+				indoc! {"
+					#include <stdio.h>
+
+					int main(void)
+					{
+						printf(\"Hello, world!\\n\");
+						return 0;
+					}
+				"},
+			)?;
 			let loki_toml = project_directory.join("loki.toml");
 			let serialized = package.serialize();
 
