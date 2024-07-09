@@ -1,205 +1,241 @@
-use std::fmt;
-use std::fmt::Formatter;
-use std::fs;
-use std::io::ErrorKind;
-use std::path::Path;
-use std::path::PathBuf;
+use std::error::Error;
+use std::str::FromStr;
 
-use color_eyre::Report;
-use serde::de::Visitor;
-use serde::Deserialize;
-use serde::Serialize;
+use indoc::indoc;
 
-const INIT_CODE: &str = r#"#include <stdio.h>
-
-int main(void) {
-    printf("Hello, world!\n");
-    return 0;
-}
-"#;
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct Project {
-	pub package:       Package,
-	pub configuration: Configuration,
+/// The type of a package.
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PackageKind {
+	/// An executable package.
+	Application,
+	/// A library package.
+	Library,
 }
 
-impl Project {
-	pub fn with_name(name: impl Into<String>) -> Self {
-		Self {
-			package:       Package {
-				name: name.into(),
-				..Default::default()
-			},
-			configuration: Default::default(),
-		}
-	}
+impl FromStr for PackageKind {
+	type Err = ();
 
-	/// Generate a new project based on `self` at the given path.
-	///
-	/// # Errors
-	/// This method will error if the project directory exists but is non-empty, or if a miscellaneous I/O error occurs.
-	pub fn generate_at(self, root_path: impl AsRef<Path>) -> Result<(), Report> {
-		let loki_toml_path = root_path.as_ref().join("loki.toml");
-		let source_path = root_path.as_ref().join("src");
-		let main_path = source_path.join("main.c");
-		match fs::create_dir(root_path.as_ref()) {
-			Ok(()) => (),
-			Err(e) if e.kind() == ErrorKind::AlreadyExists => {
-				if fs::read_dir(root_path)?.next().is_some() {
-					// TODO: this should be a custom error type but a panic is good enough for now
-					panic!("Directory is not empty");
-				}
-			},
-			Err(e) => return Err(e.into()),
-		}
-
-		fs::write(loki_toml_path, toml::to_string(&self)?)?;
-		fs::create_dir(source_path)?;
-		fs::write(main_path, INIT_CODE)?;
-
-		Ok(())
-	}
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-pub struct Package {
-	pub name: String,
-	#[serde(rename = "type")]
-	pub kind: ProjectKind,
-}
-
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ProjectKind {
-	#[default]
-	Binary,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename = "config")]
-pub struct Configuration {
-	pub compiler:     PathBuf,
-	#[serde(rename = "c-standard")]
-	pub standard:     Standard,
-	#[serde(flatten)]
-	pub optimization: Optimization,
-}
-
-impl Default for Configuration {
-	fn default() -> Self {
-		Self {
-			compiler:     PathBuf::from("clang"),
-			standard:     Default::default(),
-			optimization: Default::default(),
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"application" => Ok(PackageKind::Application),
+			"library" => Ok(PackageKind::Library),
+			_ => Err(()),
 		}
 	}
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
+impl From<PackageKind> for &str {
+	fn from(kind: PackageKind) -> &'static str {
+		match kind {
+			PackageKind::Application => "application",
+			PackageKind::Library => "library",
+		}
+	}
+}
+
+impl PackageKind {
+	pub fn as_str(&self) -> &str {
+		Into::<&str>::into(*self)
+	}
+}
+
+/// The C standard as published by ISO, with optional GNU extensions.
+///
+/// All variants correspond to an -std= flag for GCC and Clang.
+#[non_exhaustive]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Standard {
-	#[default]
+	/// The C89 standard, published as ISO/IEC 9899:1990.
 	C89,
+	/// The C99 standard, published as ISO/IEC 9899:1999.
 	C99,
+	/// The C11 standard, published as ISO/IEC 9899:2011.
 	C11,
+	/// The C17 standard, published as ISO/IEC 9899:2018.
 	C17,
+	/// The C23 standard, to be published as ISO/IEC 9899:2024.
 	C23,
+
+	/// The C89 standard, published as ISO/IEC 9899:1990, with GNU extensions.
 	Gnu89,
+	/// The C99 standard, published as ISO/IEC 9899:1999, with GNU extensions.
 	Gnu99,
+	/// The C11 standard, published as ISO/IEC 9899:2011, with GNU extensions.
 	Gnu11,
+	/// The C17 standard, published as ISO/IEC 9899:2018, with GNU extensions.
 	Gnu17,
+	/// The C23 standard, to be published as ISO/IEC 9899:2024, with GNU extensions.
 	Gnu23,
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize)]
-pub struct Optimization {
-	#[serde(rename = "opt-level")]
-	pub level: OptimizationLevel,
-	pub lto:   Option<Lto>,
-}
+impl FromStr for Standard {
+	type Err = ();
 
-#[derive(Clone, Copy, Debug, Default)]
-pub enum OptimizationLevel {
-	#[default]
-	O0,
-	O1,
-	O2,
-	O3,
-	Og,
-	Os,
-	Oz,
-	Ofast,
-}
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s {
+			"c89" => Ok(Standard::C89),
+			"c99" => Ok(Standard::C99),
+			"c11" => Ok(Standard::C11),
+			"c17" => Ok(Standard::C17),
+			"c23" => Ok(Standard::C23),
 
-impl Serialize for OptimizationLevel {
-	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-	where
-		S: serde::Serializer,
-	{
-		match self {
-			OptimizationLevel::O0 => serializer.serialize_i64(0),
-			OptimizationLevel::O1 => serializer.serialize_i64(1),
-			OptimizationLevel::O2 => serializer.serialize_i64(2),
-			OptimizationLevel::O3 => serializer.serialize_i64(3),
-			OptimizationLevel::Og => serializer.serialize_str("g"),
-			OptimizationLevel::Os => serializer.serialize_str("s"),
-			OptimizationLevel::Oz => serializer.serialize_str("z"),
-			OptimizationLevel::Ofast => serializer.serialize_str("fast"),
+			"gnu89" => Ok(Standard::Gnu89),
+			"gnu99" => Ok(Standard::Gnu99),
+			"gnu11" => Ok(Standard::Gnu11),
+			"gnu17" => Ok(Standard::Gnu17),
+			"gnu23" => Ok(Standard::Gnu23),
+
+			_ => Err(()),
 		}
 	}
 }
 
-impl<'de> Deserialize<'de> for OptimizationLevel {
-	fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-	where
-		D: serde::Deserializer<'de>,
-	{
-		const ERROR: &str = "an integer or string that is one of 0, 1, 2, 3, \"g\", \"s\", \"z\", or \"fast\"";
+impl From<Standard> for &str {
+	fn from(standard: Standard) -> &'static str {
+		match standard {
+			Standard::C89 => "c89",
+			Standard::C99 => "c99",
+			Standard::C11 => "c11",
+			Standard::C17 => "c17",
+			Standard::C23 => "c23",
 
-		struct OptimizationLevelVisitor;
-
-		impl Visitor<'_> for OptimizationLevelVisitor {
-			type Value = OptimizationLevel;
-
-			fn expecting(&self, formatter: &mut Formatter) -> Result<(), fmt::Error> {
-				formatter.write_str(ERROR)
-			}
-
-			fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
-			where
-				E: serde::de::Error,
-			{
-				Ok(match value {
-					0 => OptimizationLevel::O0,
-					1 => OptimizationLevel::O1,
-					2 => OptimizationLevel::O2,
-					3 => OptimizationLevel::O3,
-					_ => return Err(E::custom(ERROR)),
-				})
-			}
-
-			fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-			where
-				E: serde::de::Error,
-			{
-				Ok(match value {
-					"g" => OptimizationLevel::Og,
-					"s" => OptimizationLevel::Os,
-					"z" => OptimizationLevel::Oz,
-					"fast" => OptimizationLevel::Ofast,
-					_ => return Err(E::custom(ERROR)),
-				})
-			}
+			Standard::Gnu89 => "gnu89",
+			Standard::Gnu99 => "gnu99",
+			Standard::Gnu11 => "gnu11",
+			Standard::Gnu17 => "gnu17",
+			Standard::Gnu23 => "gnu23",
 		}
-
-		deserializer.deserialize_any(OptimizationLevelVisitor)
 	}
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Lto {
-	Full,
-	Thin,
+impl Standard {
+	pub fn as_str(&self) -> &str {
+		Into::<&str>::into(*self)
+	}
+}
+
+/// The metadata of a package.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Package {
+	/// The name of the package.
+	pub name:     String,
+	/// The type of the package.
+	pub kind:     PackageKind,
+	/// The version of the package.
+	pub version:  String,
+	/// The C standard this package is written in.
+	pub standard: Standard,
+}
+
+impl Package {
+	/// Parse the package metadata from a TOML document.
+	pub fn parse(toml: impl AsRef<str>) -> Result<Self, Box<dyn Error + Send + Sync>> {
+		let table = toml::from_str::<toml::Value>(toml.as_ref())?;
+
+		let package = table
+			.get("package")
+			.ok_or("missing package table")?
+			.as_table()
+			.ok_or("package is not a table")?;
+
+		let name = package
+			.get("name")
+			.ok_or("missing name field")?
+			.as_str()
+			.ok_or("name is not a string")?;
+
+		let kind = package
+			.get("type")
+			.ok_or("missing type field")?
+			.as_str()
+			.ok_or("type is not a string")?;
+
+		let kind = PackageKind::from_str(kind).map_err(|_| "unknown package type")?;
+
+		let version = package
+			.get("version")
+			.ok_or("missing version field")?
+			.as_str()
+			.ok_or("version is not a string")?;
+
+		let standard = package
+			.get("standard")
+			.ok_or("missing standard field")?
+			.as_str()
+			.ok_or("standard is not a string")?;
+
+		let standard = Standard::from_str(standard).map_err(|_| "unknown standard")?;
+
+		Ok(Package {
+			name:     name.to_string(),
+			kind:     kind,
+			version:  version.to_string(),
+			standard: standard,
+		})
+	}
+
+	/// Serialize the package metadata to a TOML document.
+	pub fn serialize(&self) -> String {
+		format!(
+			indoc! {r#"
+				[package]
+				name     = "{}"
+				type     = "{}"
+				version  = "{}"
+				standard = "{}"
+			"#},
+			self.name,
+			self.kind.as_str(),
+			self.version,
+			self.standard.as_str(),
+		)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn test_package_kind() {
+		assert_eq!(PackageKind::from_str("application"), Ok(PackageKind::Application));
+		assert_eq!(PackageKind::from_str("library"), Ok(PackageKind::Library));
+		assert_eq!(PackageKind::from_str("unknown"), Err(()));
+	}
+
+	#[test]
+	fn test_standard() {
+		assert_eq!(Standard::from_str("c89"), Ok(Standard::C89));
+		assert_eq!(Standard::from_str("c99"), Ok(Standard::C99));
+		assert_eq!(Standard::from_str("c11"), Ok(Standard::C11));
+		assert_eq!(Standard::from_str("c17"), Ok(Standard::C17));
+		assert_eq!(Standard::from_str("c23"), Ok(Standard::C23));
+
+		assert_eq!(Standard::from_str("gnu89"), Ok(Standard::Gnu89));
+		assert_eq!(Standard::from_str("gnu99"), Ok(Standard::Gnu99));
+		assert_eq!(Standard::from_str("gnu11"), Ok(Standard::Gnu11));
+		assert_eq!(Standard::from_str("gnu17"), Ok(Standard::Gnu17));
+		assert_eq!(Standard::from_str("gnu23"), Ok(Standard::Gnu23));
+
+		assert_eq!(Standard::from_str("unknown"), Err(()));
+	}
+
+	#[test]
+	fn test_package() {
+		let toml = r#"
+			[package]
+			name = "test"
+			type = "application"
+			version = "0.1.0"
+			standard = "c23"
+		"#;
+
+		let package = Package::parse(toml).unwrap();
+
+		assert_eq!(package.name, "test");
+		assert_eq!(package.kind, PackageKind::Application);
+		assert_eq!(package.version, "0.1.0");
+		assert_eq!(package.standard, Standard::C23);
+	}
 }

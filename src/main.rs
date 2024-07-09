@@ -1,3 +1,5 @@
+#![allow(clippy::redundant_field_names)]
+
 mod cli;
 mod compiler;
 mod config;
@@ -9,21 +11,19 @@ use std::cell::RefCell;
 use std::env::args;
 use std::env::current_dir;
 use std::error::Error;
-use std::fs::File;
+use std::fs;
 use std::io;
-use std::io::BufReader;
 use std::path::PathBuf;
 use std::rc::Rc;
 
 use color_eyre::Report;
 use compiler::CSourceToObject;
 use compiler::LinkObjectsToBinary;
+use config::Package;
 use directory::CreateDirectory;
 use itertools::Itertools;
 use node::Node;
 use walkdir::WalkDir;
-
-use crate::config::Project;
 
 fn main() -> Result<(), Report> {
 	color_eyre::install()?;
@@ -54,7 +54,8 @@ fn build_project() -> Result<(), Report> {
 			"loki project directory not found",
 		))?;
 
-	let project: Project = toml::from_str(&io::read_to_string(BufReader::new(File::open(loki_toml)?))?)?;
+	let package: Package =
+		Package::parse(&fs::read_to_string(loki_toml)?).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
 	let source_files = WalkDir::new(source_directory)
 		.into_iter()
@@ -81,7 +82,6 @@ fn build_project() -> Result<(), Report> {
 		.into_iter()
 		.map(|source| {
 			let cs2o = CSourceToObject {
-				configuration:    project.configuration.clone(),
 				input:            source,
 				object_directory: object_directory.clone(),
 			};
@@ -100,9 +100,8 @@ fn build_project() -> Result<(), Report> {
 
 	let lo2b_node = Rc::new(RefCell::new(Node {
 		executable: Box::new(LinkObjectsToBinary {
-			optimization: project.configuration.optimization,
-			inputs:       source_files,
-			output:       target_directory.join(project.package.name),
+			inputs: source_files,
+			output: target_directory.join(&package.name),
 		}),
 		children:   [
 			&c2so_nodes[..],

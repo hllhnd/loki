@@ -4,7 +4,9 @@ use color_eyre::Report;
 use indoc::indoc;
 
 use crate::build_project;
-use crate::config::Project;
+use crate::config::Package;
+use crate::config::PackageKind;
+use crate::config::Standard;
 
 /// Process the command line arguments and run the appropriate subcommand, assuming command arguments start at index 1.
 pub fn process(args: &[String]) -> Result<(), Report> {
@@ -23,7 +25,22 @@ fn subcommand_build() -> Result<(), Report> {
 
 fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
 	match name {
-		Some(name) => Project::with_name(name).generate_at(current_dir()?),
+		Some(name) => {
+			let package = Package {
+				name:     name.clone(),
+				kind:     PackageKind::Application,
+				version:  "0.1.0".to_string(),
+				standard: Standard::C99,
+			};
+
+			let project_directory = current_dir()?;
+			let loki_toml = project_directory.join("loki.toml");
+			let serialized = package.serialize();
+
+			std::fs::write(loki_toml, serialized)?;
+
+			Ok(())
+		},
 		None => {
 			print!(indoc! {"
 				error: missing argument 'name'
