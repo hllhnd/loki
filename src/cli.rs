@@ -53,16 +53,15 @@ fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
 		let serialized = package.serialize();
 
 		std::fs::write(loki_toml, serialized)?;
-
-		Ok(())
 	} else {
 		print!(indoc! {"
 				error: missing argument 'name'
 
 				Usage: loki new <name>
 			"});
-		Ok(())
 	}
+	
+	Ok(())
 }
 
 fn subcommand_version() -> Result<(), Report> {

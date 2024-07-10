@@ -30,9 +30,7 @@ fn main() -> Result<(), Report> {
 
 	let args = args().collect::<Vec<_>>();
 
-	cli::process(&args)?;
-
-	Ok(())
+	cli::process(&args)
 }
 
 fn build_project() -> Result<(), Report> {
