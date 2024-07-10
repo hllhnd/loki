@@ -10,6 +10,6 @@ pub struct CreateDirectory {
 
 impl Executable for CreateDirectory {
 	fn execute(&mut self) -> Result<i32, Box<dyn Error + Send + Sync>> {
-		Ok(fs::create_dir_all(&self.directory).map(|_| 0)?)
+		Ok(fs::create_dir_all(&self.directory).map(|()| 0)?)
 	}
 }

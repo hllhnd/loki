@@ -151,7 +151,7 @@ impl Package {
 			.as_str()
 			.ok_or("type is not a string")?;
 
-		let kind = PackageKind::from_str(kind).map_err(|_| "unknown package type")?;
+		let kind = PackageKind::from_str(kind).map_err(|()| "unknown package type")?;
 
 		let version = package
 			.get("version")
@@ -165,7 +165,7 @@ impl Package {
 			.as_str()
 			.ok_or("standard is not a string")?;
 
-		let standard = Standard::from_str(standard).map_err(|_| "unknown standard")?;
+		let standard = Standard::from_str(standard).map_err(|()| "unknown standard")?;
 
 		Ok(Package {
 			name:     name.to_string(),

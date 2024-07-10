@@ -101,7 +101,7 @@ fn build_project() -> Result<(), Report> {
 	let lo2b_node = Rc::new(RefCell::new(Node {
 		executable: Box::new(LinkObjectsToBinary {
 			inputs: source_files,
-			output: target_directory.join(&package.name),
+			output: target_directory.join(package.name),
 		}),
 		children:   [
 			&c2so_nodes[..],
