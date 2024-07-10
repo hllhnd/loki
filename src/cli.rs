@@ -1,4 +1,3 @@
-use std::env::current_dir;
 use std::path::PathBuf;
 
 use color_eyre::Report;
@@ -11,7 +10,7 @@ use crate::config::Standard;
 
 /// Process the command line arguments and run the appropriate subcommand, assuming command arguments start at index 1.
 pub fn process(args: &[String]) -> Result<(), Report> {
-	match args.get(1).map(|f| f.as_str()) {
+	match args.get(1).map(std::string::String::as_str) {
 		Some("build") => subcommand_build(),
 		Some("new") => subcommand_new(args.get(2)),
 		Some("-v" | "--version") => subcommand_version(),
@@ -25,23 +24,22 @@ fn subcommand_build() -> Result<(), Report> {
 }
 
 fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
-	match name {
-		Some(name) => {
-			let package = Package {
-				name:     name.clone(),
-				kind:     PackageKind::Application,
-				version:  "0.1.0".to_string(),
-				standard: Standard::C99,
-			};
+	if let Some(name) = name {
+		let package = Package {
+			name:	 name.clone(),
+			kind: 	 PackageKind::Application,
+			version: "0.1.0".to_string(),
+			standard: Standard::C99,
+		};
 
-			let project_directory = PathBuf::from(name);
-			std::fs::create_dir(&project_directory)?;
-			let src_directory = project_directory.join("src");
-			std::fs::create_dir(&src_directory)?;
-			let src_file = src_directory.join(format!("{}.c", name));
-			std::fs::write(
-				src_file,
-				indoc! {"
+		let project_directory = PathBuf::from(name);
+		std::fs::create_dir(&project_directory)?;
+		let src_directory = project_directory.join("src");
+		std::fs::create_dir(&src_directory)?;
+		let src_file = src_directory.join(format!("{name}.c"));
+		std::fs::write(
+			src_file,
+			indoc! {"
 					#include <stdio.h>
 
 					int main(void)
@@ -50,23 +48,20 @@ fn subcommand_new(name: Option<&String>) -> Result<(), Report> {
 						return 0;
 					}
 				"},
-			)?;
-			let loki_toml = project_directory.join("loki.toml");
-			let serialized = package.serialize();
+		)?;
+		let loki_toml = project_directory.join("loki.toml");
+		let serialized = package.serialize();
 
-			std::fs::write(loki_toml, serialized)?;
-
-			Ok(())
-		},
-		None => {
-			print!(indoc! {"
+		std::fs::write(loki_toml, serialized)?;
+	} else {
+		print!(indoc! {"
 				error: missing argument 'name'
 
 				Usage: loki new <name>
 			"});
-			Ok(())
-		},
 	}
+	
+	Ok(())
 }
 
 fn subcommand_version() -> Result<(), Report> {
@@ -91,12 +86,12 @@ fn subcommand_help() -> Result<(), Report> {
 		Copyright (c) 2024 Reperak
 
 		Subcommands:
-		        build           Build a Loki project
-		        new             Create a new Loki project
+			build           Build a Loki project
+			new             Create a new Loki project
 
 		Usage:
-		        --help          Show this text and exit
-		        --version       Show version information
+			--help          Show this text and exit
+			--version       Show version information
 	"});
 
 	Ok(())

@@ -24,7 +24,7 @@ impl Executable for CSourceToObject {
 		BufReader::new(File::open(&self.input)?).read_to_end(&mut buf)?;
 
 		let hash = format!("{:x}", xxh3_64(&buf));
-		let output = self.object_directory.join(format!("{}.o", hash));
+		let output = self.object_directory.join(format!("{hash}.o"));
 
 		let mut command = Command::new("clang");
 
